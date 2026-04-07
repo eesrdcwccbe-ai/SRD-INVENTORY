@@ -1,0 +1,818 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>SRD Inventory Portal - CWC Coimbatore</title>
+
+<!-- Firebase SDK -->
+<script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-database-compat.js"></script>
+
+<!-- React & Libraries -->
+<script crossorigin src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
+<script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
+<script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.5.31/jspdf.plugin.autotable.min.js"></script>
+
+<!-- Fonts -->
+<link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@400;600;700;900&family=Outfit:wght@400;600;700;900&display=swap" rel="stylesheet">
+
+<style>
+*{margin:0;padding:0;box-sizing:border-box}
+:root{--coral:#FF6B6B;--cyan:#4ECDC4;--yellow:#FFD93D;--purple:#B084CC;--blue:#6C5CE7;--green:#00D2A0;--pink:#FF8ACC;--orange:#FFA562}
+body{font-family:'Outfit',sans-serif;background:linear-gradient(135deg,#FFE5E5 0%,#FFF9E5 25%,#E5F9FF 50%,#F0E5FF 75%,#FFE5E5 100%);background-size:400% 400%;animation:rainbow 20s ease infinite;min-height:100vh;color:#2D3436}
+@keyframes rainbow{0%,100%{background-position:0% 50%}50%{background-position:100% 50%}}
+#root{max-width:1600px;margin:0 auto;padding:20px;position:relative;z-index:1}
+
+/* Cover Page */
+.cover-page{position:fixed;inset:0;background:linear-gradient(135deg,#1e3a8a 0%,#3b82f6 50%,#60a5fa 100%);display:flex;flex-direction:column;align-items:center;justify-content:center;z-index:10000;animation:coverFade 0.5s}
+@keyframes coverFade{from{opacity:0}to{opacity:1}}
+.cover-content{text-align:center;color:white;animation:slideUp 0.8s ease-out}
+@keyframes slideUp{from{transform:translateY(40px);opacity:0}to{transform:translateY(0);opacity:1}}
+.cover-logo{width:180px;height:180px;background:white;border-radius:30px;display:flex;align-items:center;justify-content:center;margin:0 auto 30px;box-shadow:0 20px 60px rgba(0,0,0,0.3);position:relative;overflow:hidden}
+.cover-logo::before{content:'';position:absolute;inset:0;background:linear-gradient(135deg,#1e3a8a,#3b82f6);opacity:0.1}
+.cwc-emblem{width:140px;height:140px;position:relative}
+.water-drop{width:60px;height:80px;background:linear-gradient(135deg,#60a5fa,#3b82f6);border-radius:50% 50% 50% 0;transform:rotate(45deg);position:absolute;top:30px;left:40px;box-shadow:inset -5px -5px 10px rgba(0,0,0,0.2)}
+.cwc-text{position:absolute;bottom:15px;left:0;right:0;font-size:20px;font-weight:900;color:#1e3a8a;letter-spacing:3px}
+.cover-title{font-size:48px;font-weight:900;margin-bottom:15px;font-family:'Fredoka',sans-serif;text-shadow:0 4px 20px rgba(0,0,0,0.3);letter-spacing:2px}
+.cover-subtitle{font-size:24px;font-weight:600;margin-bottom:10px;opacity:0.95}
+.cover-org{font-size:18px;font-weight:500;margin-bottom:40px;opacity:0.9}
+.cover-btn{background:white;color:#1e3a8a;padding:18px 45px;border:none;border-radius:50px;font-size:18px;font-weight:700;cursor:pointer;box-shadow:0 10px 30px rgba(0,0,0,0.2);transition:all 0.3s;margin-top:20px;font-family:'Outfit',sans-serif;text-transform:uppercase;letter-spacing:1px}
+.cover-btn:hover{transform:translateY(-3px);box-shadow:0 15px 40px rgba(0,0,0,0.3)}
+
+.card{background:white;border-radius:24px;padding:28px;box-shadow:0 10px 40px rgba(0,0,0,0.08);transition:all 0.4s;margin-bottom:24px}
+.card:hover{transform:translateY(-8px);box-shadow:0 20px 60px rgba(0,0,0,0.15)}
+.btn{padding:14px 28px;border:none;border-radius:16px;font-weight:700;font-size:14px;cursor:pointer;transition:all 0.3s;font-family:'Outfit',sans-serif;display:inline-flex;align-items:center;gap:8px;text-transform:uppercase;letter-spacing:0.5px}
+.btn-primary{background:linear-gradient(135deg,#FF6B6B,#FF8ACC);color:white;box-shadow:0 6px 20px rgba(255,107,107,0.4)}
+.btn-primary:hover{transform:translateY(-3px)}
+.btn-secondary{background:linear-gradient(135deg,#4ECDC4,#16A085);color:white}
+.btn-success{background:linear-gradient(135deg,#00D2A0,#00B894);color:white}
+.btn-warning{background:linear-gradient(135deg,#FFA562,#FFD93D);color:white}
+.btn-danger{background:linear-gradient(135deg,#FF6B6B,#E74C3C);color:white}
+.input,select.input,textarea.input{width:100%;padding:16px 20px;border:3px solid #DFE6E9;border-radius:16px;font-size:15px;font-family:'Outfit',sans-serif;transition:all 0.3s;outline:none;background:white;font-weight:500}
+.input:focus{border-color:var(--coral);box-shadow:0 0 0 4px rgba(255,107,107,0.15);transform:translateY(-2px)}
+textarea.input{min-height:100px;resize:vertical}
+
+.login-screen{position:fixed;inset:0;display:flex;align-items:center;justify-content:center;padding:20px;z-index:1000}
+.login-box{background:white;padding:50px;border-radius:32px;box-shadow:0 30px 80px rgba(0,0,0,0.2);max-width:480px;width:100%}
+.login-logo{width:90px;height:90px;margin:0 auto 24px;background:linear-gradient(135deg,var(--coral),var(--cyan));border-radius:24px;display:flex;align-items:center;justify-content:center;font-size:44px}
+.login-tabs{display:flex;gap:8px;margin-bottom:32px;background:#FFF9F0;padding:8px;border-radius:16px}
+.login-tab{flex:1;padding:12px;border:none;background:transparent;border-radius:12px;cursor:pointer;font-weight:700;font-size:13px;color:#636E72;transition:all 0.3s;font-family:'Outfit',sans-serif}
+.login-tab.active{background:linear-gradient(135deg,var(--coral),var(--pink));color:white;box-shadow:0 4px 15px rgba(255,107,107,0.3);transform:scale(1.05)}
+
+.header{background:white;padding:28px 36px;border-radius:28px;box-shadow:0 8px 32px rgba(0,0,0,0.08);margin-bottom:28px;display:flex;align-items:center;gap:24px;flex-wrap:wrap}
+.header-logo{width:70px;height:70px;background:linear-gradient(135deg,var(--coral),var(--cyan));border-radius:20px;display:flex;align-items:center;justify-content:center;font-size:36px}
+.header-info{flex:1;min-width:200px}
+.header-title{font-size:28px;font-weight:900;background:linear-gradient(135deg,var(--coral),var(--purple));-webkit-background-clip:text;-webkit-text-fill-color:transparent;margin-bottom:6px;font-family:'Fredoka',sans-serif}
+.user-badge{background:linear-gradient(135deg,var(--purple),#A29BFE);color:white;padding:16px 24px;border-radius:18px;font-weight:700}
+
+.dashboard-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(280px,1fr));gap:24px;margin-bottom:32px}
+.stat-card{background:white;padding:32px;border-radius:24px;box-shadow:0 8px 32px rgba(0,0,0,0.08);position:relative;overflow:hidden;transition:all 0.4s}
+.stat-card:hover{transform:translateY(-12px);box-shadow:0 20px 60px rgba(0,0,0,0.15)}
+.stat-value{font-size:52px;font-weight:900;background:linear-gradient(135deg,var(--coral),var(--cyan));-webkit-background-clip:text;-webkit-text-fill-color:transparent;margin-bottom:10px;font-family:'Fredoka',sans-serif}
+.stat-label{color:#2D3436;font-size:15px;font-weight:700;text-transform:uppercase}
+
+.nav-tabs{display:flex;gap:12px;margin-bottom:28px;flex-wrap:wrap}
+.nav-tab{padding:16px 28px;background:white;border:3px solid #DFE6E9;border-radius:18px;cursor:pointer;font-weight:700;font-size:15px;color:#636E72;transition:all 0.3s;display:flex;align-items:center;gap:10px;font-family:'Outfit',sans-serif}
+.nav-tab.active{background:linear-gradient(135deg,var(--coral),var(--pink));color:white;border-color:var(--coral);transform:translateY(-4px)}
+
+.form-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));gap:24px;margin-bottom:24px}
+.form-field{display:flex;flex-direction:column;gap:10px}
+.form-label{font-weight:700;font-size:13px;color:#2D3436;text-transform:uppercase}
+
+.item-card{background:white;padding:28px;border-radius:20px;box-shadow:0 6px 24px rgba(0,0,0,0.08);margin-bottom:20px;transition:all 0.3s;border-left:6px solid var(--coral)}
+.item-card:hover{transform:translateX(8px);box-shadow:0 12px 40px rgba(0,0,0,0.15)}
+.item-header{display:flex;justify-content:space-between;align-items:start;margin-bottom:20px;gap:16px;flex-wrap:wrap}
+.item-title{font-size:20px;font-weight:900;color:#2D3436}
+.item-badge{background:linear-gradient(135deg,var(--coral),var(--pink));color:white;padding:8px 18px;border-radius:20px;font-size:13px;font-weight:700}
+.item-meta{display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:16px;margin-bottom:20px}
+.meta-item{background:#FFF9F0;padding:14px;border-radius:14px;border-left:4px solid var(--cyan)}
+.meta-label{font-size:11px;font-weight:700;color:#636E72;text-transform:uppercase;margin-bottom:6px}
+.meta-value{font-size:16px;font-weight:700;color:#2D3436}
+
+.status-pill{display:inline-block;padding:8px 16px;border-radius:16px;font-size:12px;font-weight:700;text-transform:uppercase;margin-top:8px}
+.status-active{background:rgba(0,210,160,0.2);color:var(--green);border:2px solid var(--green)}
+.status-maintenance{background:rgba(255,165,98,0.2);color:var(--orange);border:2px solid var(--orange)}
+.status-issued{background:rgba(176,132,204,0.2);color:var(--purple);border:2px solid var(--purple)}
+
+.modal{position:fixed;inset:0;background:rgba(0,0,0,0.7);backdrop-filter:blur(12px);display:flex;align-items:center;justify-content:center;z-index:9999;padding:20px}
+.modal-content{background:white;border-radius:28px;max-width:650px;width:100%;max-height:90vh;overflow-y:auto}
+.modal-header{padding:28px 36px;border-bottom:3px solid #DFE6E9;display:flex;justify-content:space-between;align-items:center;background:#FFF9F0}
+.modal-title{font-size:24px;font-weight:900;font-family:'Fredoka',sans-serif}
+.modal-close{background:white;border:3px solid #DFE6E9;width:42px;height:42px;border-radius:50%;cursor:pointer;font-size:24px;display:flex;align-items:center;justify-content:center;transition:all 0.3s}
+.modal-close:hover{background:var(--coral);color:white;transform:rotate(90deg)}
+.modal-body{padding:36px}
+
+.search-box{position:relative;margin-bottom:28px}
+.search-box input{width:100%;padding:18px 56px 18px 24px;border:3px solid #DFE6E9;border-radius:20px;font-size:16px;font-weight:600}
+.search-box input:focus{border-color:var(--coral);outline:none}
+.search-icon{position:absolute;right:22px;top:50%;transform:translateY(-50%);font-size:24px}
+
+.toast{position:fixed;bottom:32px;right:32px;padding:18px 28px;background:white;border-radius:18px;box-shadow:0 12px 40px rgba(0,0,0,0.25);display:flex;align-items:center;gap:14px;font-weight:700;z-index:10000;border-left:6px solid;animation:slideIn 0.5s}
+@keyframes slideIn{from{transform:translateX(120px);opacity:0}to{transform:translateX(0);opacity:1}}
+.toast-success{border-color:var(--green);color:var(--green)}
+.toast-error{border-color:var(--coral);color:var(--coral)}
+
+.sync-badge{position:fixed;top:20px;right:20px;background:linear-gradient(135deg,var(--green),#00B894);color:white;padding:10px 20px;border-radius:30px;font-size:13px;font-weight:700;box-shadow:0 4px 15px rgba(0,210,160,0.3);z-index:9998;animation:pulse 2s ease infinite}
+@keyframes pulse{0%,100%{opacity:1}50%{opacity:0.7}}
+
+.export-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));gap:24px}
+.export-card{background:white;padding:32px;border-radius:20px;box-shadow:0 6px 24px rgba(0,0,0,0.08);text-align:center;transition:all 0.3s;border-top:5px solid}
+.export-card:hover{transform:translateY(-8px);box-shadow:0 16px 50px rgba(0,0,0,0.18)}
+.export-icon{font-size:70px;margin-bottom:20px}
+.export-title{font-size:20px;font-weight:900;margin-bottom:10px;font-family:'Fredoka',sans-serif}
+
+.qr-display{text-align:center;padding:30px;background:white;border:5px solid;border-image:linear-gradient(135deg,var(--coral),var(--cyan)) 1;border-radius:20px;display:inline-block}
+
+@media(max-width:768px){
+#root{padding:14px}
+.header{padding:24px 20px;flex-direction:column;text-align:center}
+.dashboard-grid{grid-template-columns:1fr}
+.form-grid{grid-template-columns:1fr}
+.item-meta{grid-template-columns:1fr}
+.nav-tabs{flex-direction:column}
+.nav-tab{width:100%}
+.cover-title{font-size:32px}
+.cover-subtitle{font-size:18px}
+.cover-logo{width:120px;height:120px}
+}
+</style>
+</head>
+<body>
+<div id="root"></div>
+
+<script>
+// Load lab items data from external JSON file
+// This will be populated with all 136 items
+const LAB_ITEMS_DATA_URL = 'lab_items_js.json';
+</script>
+
+<script type="text/babel">
+const{useState,useEffect,useRef}=React;
+
+// FIREBASE CONFIG
+const firebaseConfig = {
+  apiKey: "AIzaSyChzvlY5AAcHwP_io5aIG2s29vAjBSd5GY",
+  authDomain: "t-p-srd-inventory.firebaseapp.com",
+  databaseURL: "https://t-p-srd-inventory-default-rtdb.asia-southeast1.firebasedatabase.app",
+  projectId: "t-p-srd-inventory",
+  storageBucket: "t-p-srd-inventory.firebasestorage.app",
+  messagingSenderId: "990884425035",
+  appId: "1:990884425035:web:5d1fa9dbd2bb0cb75eccce",
+  measurementId: "G-PNSLTF9GZP"
+};
+
+let database=null,useFirebase=false;
+try{
+  if(!firebase.apps.length)firebase.initializeApp(firebaseConfig);
+  database=firebase.database();
+  useFirebase=true;
+  console.log('🔥 Firebase connected');
+}catch(e){
+  console.log('⚠️ Using localStorage');
+}
+
+const TP_KEY='tp_srd';
+const MAS_KEY='mas_srd';
+const USERS_KEY='users_srd';
+const COVER_KEY='cover_shown';
+
+const INITIAL_USERS=[
+  {id:'je',username:'je',password:'je123',role:'Junior Engineer',name:'Rajesh Kumar',level:'je'},
+  {id:'ad',username:'ad',password:'ad123',role:'Assistant Director-II',name:'Priya Sharma',level:'ad'},
+  {id:'ee',username:'ee',password:'ee123',role:'Executive Engineer',name:'Amit Verma',level:'ee'}
+];
+
+// Placeholder - will be replaced with actual 136 items from JSON
+const INITIAL_LAB_ITEMS=[
+  {id:'SRD/LAB/001',type:'Equipment',desc:'Click "Load All 136 Items" button to import',quantity:'---',date:'2024-01-15',cost:0,location:'---',custodian:'---',condition:'Good',status:'Active',created:new Date().toISOString(),createdBy:'System',issuances:[]}
+];
+
+// MAIN APP
+function App(){
+const[showCover,setShowCover]=useState(!localStorage.getItem(COVER_KEY));
+const[user,setUser]=useState(null);
+const[users,setUsers]=useState(INITIAL_USERS);
+const[portal,setPortal]=useState('dashboard');
+const[tab,setTab]=useState('view');
+const[tpData,setTpData]=useState([]);
+const[masData,setMasData]=useState([]);
+const[toast,setToast]=useState(null);
+const[synced,setSynced]=useState(false);
+
+useEffect(()=>{
+  if(!showCover){
+    loadUsers();
+    loadData();
+  }
+},[showCover]);
+
+const handleEnter=()=>{
+  localStorage.setItem(COVER_KEY,'true');
+  setShowCover(false);
+};
+
+const loadUsers=async()=>{
+  try{
+    if(useFirebase&&database){
+      const snapshot=await database.ref('users').once('value');
+      const fbUsers=snapshot.val();
+      if(fbUsers&&Object.keys(fbUsers).length>0){
+        setUsers(Object.values(fbUsers));
+      }else{
+        INITIAL_USERS.forEach(u=>database.ref('users/'+u.id).set(u));
+        setUsers(INITIAL_USERS);
+      }
+    }else{
+      const stored=localStorage.getItem(USERS_KEY);
+      if(stored){
+        setUsers(JSON.parse(stored));
+      }else{
+        localStorage.setItem(USERS_KEY,JSON.stringify(INITIAL_USERS));
+        setUsers(INITIAL_USERS);
+      }
+    }
+  }catch(e){
+    console.error('Load users error',e);
+  }
+};
+
+const loadData=async()=>{
+  try{
+    if(useFirebase&&database){
+      const tpSnapshot=await database.ref('tp_items').once('value');
+      const masSnapshot=await database.ref('mas_items').once('value');
+      
+      let tp=tpSnapshot.val()?Object.values(tpSnapshot.val()):[];
+      let mas=masSnapshot.val()?Object.values(masSnapshot.val()):[];
+      
+      if(tp.length===0){
+        tp=INITIAL_LAB_ITEMS;
+        tp.forEach(item=>database.ref('tp_items/'+item.id.replace(/\//g,'_')).set(item));
+      }
+      
+      setTpData(tp);
+      setMasData(mas);
+      setSynced(true);
+    }else{
+      let tp=JSON.parse(localStorage.getItem(TP_KEY)||'[]');
+      if(tp.length===0){
+        tp=INITIAL_LAB_ITEMS;
+        localStorage.setItem(TP_KEY,JSON.stringify(tp));
+      }
+      setTpData(tp);
+      setMasData(JSON.parse(localStorage.getItem(MAS_KEY)||'[]'));
+    }
+  }catch(e){
+    console.error('Load data error',e);
+  }
+};
+
+const saveData=async(type,data)=>{
+  try{
+    if(useFirebase&&database){
+      const ref=database.ref(type==='tp'?'tp_items':'mas_items');
+      await ref.remove();
+      data.forEach(item=>ref.child(item.id.replace(/\//g,'_')).set(item));
+      setSynced(true);
+    }
+    localStorage.setItem(type==='tp'?TP_KEY:MAS_KEY,JSON.stringify(data));
+    if(type==='tp')setTpData(data);
+    else setMasData(data);
+  }catch(e){
+    console.error('Save error',e);
+    showToast('Error saving','error');
+  }
+};
+
+const saveUsers=async(updatedUsers)=>{
+  try{
+    if(useFirebase&&database){
+      const updates={};
+      updatedUsers.forEach(u=>updates['users/'+u.id]=u);
+      await database.ref().update(updates);
+      setSynced(true);
+    }
+    localStorage.setItem(USERS_KEY,JSON.stringify(updatedUsers));
+    setUsers(updatedUsers);
+    showToast('✅ User updated!');
+  }catch(e){
+    console.error('Save users error',e);
+    showToast('Error updating user','error');
+  }
+};
+
+const showToast=(msg,type='success')=>{
+  setToast({message:msg,type});
+  setTimeout(()=>setToast(null),3500);
+};
+
+if(showCover)return<CoverPage onEnter={handleEnter}/>;
+if(!user)return<Login users={users} onLogin={setUser} showToast={showToast}/>;
+
+return(
+<div>
+{synced&&useFirebase&&<div className="sync-badge">✓ Firebase Synced</div>}
+<Header user={user} onLogout={()=>setUser(null)}/>
+<div className="nav-tabs">
+<button className={`nav-tab ${portal==='dashboard'?'active':''}`} onClick={()=>setPortal('dashboard')}>📊 Dashboard</button>
+<button className={`nav-tab ${portal==='tp'?'active':''}`} onClick={()=>{setPortal('tp');setTab('view')}}>🛠️ T&P ({tpData.length})</button>
+<button className={`nav-tab ${portal==='mas'?'active':''}`} onClick={()=>{setPortal('mas');setTab('view')}}>📦 MAS ({masData.length})</button>
+{user.level==='ee'&&<button className={`nav-tab ${portal==='users'?'active':''}`} onClick={()=>setPortal('users')}>👥 Users</button>}
+</div>
+
+{portal==='dashboard'&&<Dashboard tpData={tpData} masData={masData}/>}
+{portal==='tp'&&<Portal type="tp" data={tpData} save={d=>saveData('tp',d)} user={user} showToast={showToast} tab={tab} setTab={setTab}/>}
+{portal==='mas'&&<Portal type="mas" data={masData} save={d=>saveData('mas',d)} user={user} showToast={showToast} tab={tab} setTab={setTab}/>}
+{portal==='users'&&user.level==='ee'&&<Users users={users} save={saveUsers} showToast={showToast}/>}
+
+{toast&&<div className={`toast toast-${toast.type}`}><span style={{fontSize:'24px'}}>{toast.type==='success'?'✅':'❌'}</span><span>{toast.message}</span></div>}
+</div>
+);
+}
+
+// COVER PAGE with CWC Logo
+function CoverPage({onEnter}){
+return(
+<div className="cover-page">
+<div className="cover-content">
+<div className="cover-logo">
+<div className="cwc-emblem">
+<div className="water-drop"/>
+<div className="cwc-text">CWC</div>
+</div>
+</div>
+<h1 className="cover-title">INVENTORY MANAGEMENT PORTAL</h1>
+<h2 className="cover-subtitle">Southern Rivers Division</h2>
+<p className="cover-org">Central Water Commission · Coimbatore</p>
+<div style={{fontSize:'16px',marginBottom:'30px',opacity:0.9}}>
+<p>🛠️ Tools & Plants Management</p>
+<p style={{marginTop:'10px'}}>📦 Materials, Articles & Stores</p>
+<p style={{marginTop:'10px'}}>📊 Real-time Inventory Tracking</p>
+</div>
+<button className="cover-btn" onClick={onEnter}>ENTER PORTAL →</button>
+<p style={{marginTop:'30px',fontSize:'13px',opacity:0.8}}>Government of India | Ministry of Jal Shakti</p>
+</div>
+</div>
+);
+}
+
+// LOGIN
+function Login({users,onLogin,showToast}){
+const[tab,setTab]=useState('je');
+const[u,setU]=useState('');
+const[p,setP]=useState('');
+
+const handleSubmit=e=>{
+e.preventDefault();
+const user=users.find(x=>x.username===u&&x.password===p&&x.level===tab);
+if(user){onLogin(user);showToast(`🎉 Welcome ${user.name}!`)}
+else showToast('Invalid credentials!','error');
+};
+
+return(
+<div className="login-screen">
+<div className="login-box">
+<div className="login-logo">📦</div>
+<h1 style={{textAlign:'center',fontSize:'32px',fontWeight:900,marginBottom:'8px',fontFamily:'Fredoka'}}>SRD Inventory</h1>
+<p style={{textAlign:'center',color:'#636E72',marginBottom:'32px',fontSize:'15px',fontWeight:600}}>CWC Coimbatore</p>
+<div className="login-tabs">
+<button className={`login-tab ${tab==='je'?'active':''}`} onClick={()=>setTab('je')}>JE</button>
+<button className={`login-tab ${tab==='ad'?'active':''}`} onClick={()=>setTab('ad')}>AD-II</button>
+<button className={`login-tab ${tab==='ee'?'active':''}`} onClick={()=>setTab('ee')}>EE</button>
+</div>
+<form onSubmit={handleSubmit}>
+<div className="form-field">
+<label className="form-label">Username</label>
+<input className="input" value={u} onChange={e=>setU(e.target.value)} required placeholder="Enter username"/>
+</div>
+<div className="form-field" style={{marginTop:'20px'}}>
+<label className="form-label">Password</label>
+<input className="input" type="password" value={p} onChange={e=>setP(e.target.value)} required placeholder="Enter password"/>
+</div>
+<button type="submit" className="btn btn-primary" style={{width:'100%',marginTop:'28px',padding:'18px'}}>🔐 LOGIN</button>
+</form>
+</div>
+</div>
+);
+}
+
+// HEADER
+function Header({user,onLogout}){
+return(
+<div className="header">
+<div className="header-logo">📦</div>
+<div className="header-info">
+<div className="header-title">Inventory Portal</div>
+<div style={{color:'#636E72',fontSize:'15px',fontWeight:600}}>Southern Rivers Division – CWC Coimbatore</div>
+</div>
+<div className="user-badge">
+<div style={{fontSize:'11px',opacity:0.9,marginBottom:'4px'}}>{user.role.toUpperCase()}</div>
+<div style={{fontSize:'18px',fontWeight:900}}>{user.name}</div>
+<button onClick={onLogout} style={{marginTop:'10px',background:'rgba(255,255,255,0.25)',border:'2px solid rgba(255,255,255,0.4)',color:'white',padding:'8px 16px',borderRadius:'10px',cursor:'pointer',fontWeight:700,fontSize:'12px'}}>🚪 LOGOUT</button>
+</div>
+</div>
+);
+}
+
+// DASHBOARD
+function Dashboard({tpData,masData}){
+const tpActive=tpData.filter(a=>a.status==='Active').length;
+const tpIssued=tpData.filter(a=>a.status==='Issued').length;
+const tpValue=tpData.reduce((sum,a)=>sum+(a.cost||0),0);
+
+return(
+<div>
+<h2 style={{fontSize:'32px',fontWeight:900,marginBottom:'28px',fontFamily:'Fredoka'}}>📊 Dashboard</h2>
+<div className="dashboard-grid">
+<div className="stat-card"><div className="stat-value">{tpData.length}</div><div className="stat-label">Total T&P</div></div>
+<div className="stat-card"><div className="stat-value">{tpActive}</div><div className="stat-label">Active</div></div>
+<div className="stat-card"><div className="stat-value">₹{(tpValue/10000000).toFixed(1)}Cr</div><div className="stat-label">T&P Value</div></div>
+<div className="stat-card"><div className="stat-value">{tpIssued}</div><div className="stat-label">Issued</div></div>
+<div className="stat-card"><div className="stat-value">{masData.length}</div><div className="stat-label">MAS Items</div></div>
+</div>
+
+<div className="card">
+<h3 style={{fontSize:'22px',fontWeight:900,marginBottom:'20px',fontFamily:'Fredoka'}}>📥 Load All 136 Lab Items</h3>
+<p style={{marginBottom:'20px',color:'#636E72'}}>Click below to load all equipment from your Excel files into the portal.</p>
+<button className="btn btn-success" onClick={()=>{
+  fetch('lab_items_js.json')
+    .then(r=>r.json())
+    .then(data=>{
+      localStorage.setItem('tp_srd',JSON.stringify(data));
+      alert('✅ All 136 items loaded! Refresh the page.');
+      location.reload();
+    })
+    .catch(()=>alert('⚠️ Please place lab_items_js.json in the same folder'));
+}}>
+📂 LOAD ALL 136 ITEMS
+</button>
+<p style={{marginTop:'15px',fontSize:'13px',color:'#636E72'}}>💡 Make sure <strong>lab_items_js.json</strong> is in the same directory</p>
+</div>
+</div>
+);
+}
+
+// PORTAL SECTION
+function Portal({type,data,save,user,showToast,tab,setTab}){
+const[editItem,setEditItem]=useState(null);
+const[qrItem,setQrItem]=useState(null);
+const[search,setSearch]=useState('');
+
+const filtered=data.filter(i=>
+  i.id.toLowerCase().includes(search.toLowerCase())||
+  i.desc.toLowerCase().includes(search.toLowerCase())||
+  i.location.toLowerCase().includes(search.toLowerCase())
+);
+
+const handleAdd=d=>{
+  save([{...d,created:new Date().toISOString(),createdBy:user.name,issuances:[]},...data]);
+  setTab('view');
+  showToast('✅ Item added!');
+};
+
+const handleEdit=d=>{
+  save(data.map(x=>x.id===d.id?{...d,lastModified:new Date().toISOString(),lastModifiedBy:user.name}:x));
+  setEditItem(null);
+  showToast('✅ Updated!');
+};
+
+const handleDelete=id=>{
+  if(confirm('🗑️ Delete this item?')){
+    save(data.filter(x=>x.id!==id));
+    showToast('🗑️ Deleted!');
+  }
+};
+
+const exportCSV=()=>{
+  let csv='\uFEFFID,Type,Description,Quantity,Cost,Location,Status\n';
+  data.forEach(x=>{csv+=`"${x.id}","${x.type}","${x.desc}","${x.quantity||''}",${x.cost||0},"${x.location}",${x.status}\n`});
+  const blob=new Blob([csv],{type:'text/csv'});
+  const url=URL.createObjectURL(blob);
+  const a=document.createElement('a');
+  a.href=url;
+  a.download=`${type}_register_${new Date().toISOString().split('T')[0]}.csv`;
+  a.click();
+  showToast('📥 CSV exported!');
+};
+
+const exportExcel=()=>{
+  const ws_data=[['ID','Type','Description','Quantity','Cost','Location','Status']];
+  data.forEach(x=>{
+    ws_data.push([x.id,x.type,x.desc,x.quantity||'',x.cost||0,x.location,x.status]);
+  });
+  const ws=XLSX.utils.aoa_to_sheet(ws_data);
+  const wb=XLSX.utils.book_new();
+  XLSX.utils.book_append_sheet(wb,ws,`${type.toUpperCase()} Register`);
+  XLSX.writeFile(wb,`${type}_register_${new Date().toISOString().split('T')[0]}.xlsx`);
+  showToast('📗 Excel exported!');
+};
+
+const exportPDF=()=>{
+  const{jsPDF}=window.jspdf;
+  const doc=new jsPDF('l','mm','a4');
+  doc.setFontSize(18);
+  doc.text(`${type.toUpperCase()} Register - SRD, CWC Coimbatore`,14,15);
+  doc.setFontSize(10);
+  doc.text(`Generated: ${new Date().toLocaleString('en-IN')}`,14,22);
+  
+  const headers=[['ID','Type','Description','Quantity','Cost','Location','Status']];
+  const body=data.map(x=>[x.id,x.type,x.desc.substring(0,40),x.quantity||'',`₹${x.cost||0}`,x.location,x.status]);
+  
+  doc.autoTable({
+    head:headers,
+    body:body,
+    startY:28,
+    styles:{fontSize:8},
+    headStyles:{fillColor:[255,107,107]}
+  });
+  
+  doc.save(`${type}_register_${new Date().toISOString().split('T')[0]}.pdf`);
+  showToast('📕 PDF exported!');
+};
+
+return(
+<div>
+<div className="nav-tabs">
+<button className={`nav-tab ${tab==='view'?'active':''}`} onClick={()=>setTab('view')}>📋 View All</button>
+{user.level==='je'&&<button className={`nav-tab ${tab==='add'?'active':''}`} onClick={()=>setTab('add')}>➕ Add New</button>}
+<button className={`nav-tab ${tab==='export'?'active':''}`} onClick={()=>setTab('export')}>📥 Export</button>
+</div>
+
+{tab==='view'&&(
+<div>
+<div className="search-box">
+<input placeholder="🔍 Search items..." value={search} onChange={e=>setSearch(e.target.value)}/>
+<span className="search-icon">🔍</span>
+</div>
+{filtered.map(item=>(
+<div key={item.id} className="item-card">
+<div className="item-header">
+<div><div className="item-title">{item.desc}</div><span className={`status-pill status-${item.status.toLowerCase().replace(' ','')}`}>{item.status}</span></div>
+<div className="item-badge">{item.id}</div>
+</div>
+<div className="item-meta">
+<div className="meta-item"><div className="meta-label">Type</div><div className="meta-value">{item.type}</div></div>
+<div className="meta-item"><div className="meta-label">Quantity</div><div className="meta-value">{item.quantity}</div></div>
+<div className="meta-item"><div className="meta-label">Cost</div><div className="meta-value">₹{(item.cost||0).toLocaleString()}</div></div>
+<div className="meta-item"><div className="meta-label">Location</div><div className="meta-value">{item.location}</div></div>
+</div>
+<div style={{display:'flex',gap:'10px',flexWrap:'wrap'}}>
+<button className="btn btn-primary" onClick={()=>setQrItem(item)}>📱 QR Code</button>
+{user.level==='je'&&<button className="btn btn-warning" onClick={()=>setEditItem(item)}>✏️ Edit</button>}
+{user.level==='je'&&<button className="btn btn-danger" onClick={()=>handleDelete(item.id)}>🗑️ Delete</button>}
+</div>
+</div>
+))}
+{filtered.length===0&&<div className="card"><p style={{textAlign:'center',padding:'60px',color:'#636E72',fontSize:'18px'}}>No items found</p></div>}
+</div>
+)}
+
+{tab==='add'&&user.level==='je'&&<AddForm type={type} onSave={handleAdd}/>}
+
+{tab==='export'&&(
+<div>
+<h3 style={{fontSize:'28px',fontWeight:900,marginBottom:'24px',fontFamily:'Fredoka'}}>📥 Export Data</h3>
+<div className="export-grid">
+<div className="export-card" style={{borderColor:'var(--green)'}}>
+<div className="export-icon">📊</div>
+<div className="export-title">CSV Export</div>
+<button className="btn btn-success" style={{width:'100%'}} onClick={exportCSV}>📥 Download CSV</button>
+</div>
+<div className="export-card" style={{borderColor:'var(--cyan)'}}>
+<div className="export-icon">📗</div>
+<div className="export-title">Excel Export</div>
+<button className="btn btn-secondary" style={{width:'100%'}} onClick={exportExcel}>📗 Download Excel</button>
+</div>
+<div className="export-card" style={{borderColor:'var(--coral)'}}>
+<div className="export-icon">📕</div>
+<div className="export-title">PDF Report</div>
+<button className="btn btn-danger" style={{width:'100%'}} onClick={exportPDF}>📕 Download PDF</button>
+</div>
+</div>
+</div>
+)}
+
+{editItem&&<EditModal item={editItem} onClose={()=>setEditItem(null)} onSave={handleEdit}/>}
+{qrItem&&<QRModal item={qrItem} onClose={()=>setQrItem(null)}/>}
+</div>
+);
+}
+
+// ADD FORM
+function AddForm({type,onSave}){
+const[data,setData]=useState({status:'Active',condition:'Good'});
+
+return(
+<div className="card">
+<h3 style={{marginBottom:'20px',fontSize:'24px',fontWeight:900,fontFamily:'Fredoka'}}>➕ Add New {type==='tp'?'T&P':'MAS'} Item</h3>
+<form onSubmit={e=>{e.preventDefault();onSave(data)}}>
+<div className="form-grid">
+<div className="form-field"><label className="form-label">ID *</label><input className="input" required onChange={e=>setData({...data,id:e.target.value})} placeholder="SRD/LAB/XXX"/></div>
+<div className="form-field"><label className="form-label">Type *</label><select className="input" required onChange={e=>setData({...data,type:e.target.value})}><option value="">Select</option><option value="Equipment">Equipment</option><option value="Tool">Tool</option><option value="Machinery">Machinery</option><option value="Vehicle">Vehicle</option></select></div>
+<div className="form-field" style={{gridColumn:'1/-1'}}><label className="form-label">Description *</label><input className="input" required onChange={e=>setData({...data,desc:e.target.value})} placeholder="Full description"/></div>
+<div className="form-field"><label className="form-label">Quantity</label><input className="input" onChange={e=>setData({...data,quantity:e.target.value})} placeholder="1 No, 2 Nos, etc."/></div>
+<div className="form-field"><label className="form-label">Date</label><input className="input" type="date" onChange={e=>setData({...data,date:e.target.value})}/></div>
+<div className="form-field"><label className="form-label">Cost (₹)</label><input className="input" type="number" onChange={e=>setData({...data,cost:parseFloat(e.target.value)})} placeholder="50000"/></div>
+<div className="form-field"><label className="form-label">Location *</label><input className="input" required onChange={e=>setData({...data,location:e.target.value})} placeholder="Laboratory"/></div>
+<div className="form-field"><label className="form-label">Custodian</label><input className="input" onChange={e=>setData({...data,custodian:e.target.value})} placeholder="Lab In-charge"/></div>
+<div className="form-field"><label className="form-label">Condition</label><select className="input" value={data.condition} onChange={e=>setData({...data,condition:e.target.value})}><option value="Excellent">Excellent</option><option value="Good">Good</option><option value="Fair">Fair</option><option value="Poor">Poor</option></select></div>
+<div className="form-field"><label className="form-label">Status</label><select className="input" value={data.status} onChange={e=>setData({...data,status:e.target.value})}><option value="Active">Active</option><option value="Under Maintenance">Under Maintenance</option><option value="Issued">Issued</option></select></div>
+</div>
+<button type="submit" className="btn btn-success" style={{width:'100%',marginTop:'24px',padding:'18px'}}>💾 SAVE ITEM</button>
+</form>
+</div>
+);
+}
+
+// EDIT MODAL
+function EditModal({item,onClose,onSave}){
+const[data,setData]=useState(item);
+
+return(
+<div className="modal" onClick={onClose}>
+<div className="modal-content" onClick={e=>e.stopPropagation()}>
+<div className="modal-header">
+<div className="modal-title">✏️ Edit Item</div>
+<button className="modal-close" onClick={onClose}>×</button>
+</div>
+<div className="modal-body">
+<form onSubmit={e=>{e.preventDefault();onSave(data)}}>
+<div className="form-field"><label className="form-label">ID</label><input className="input" value={data.id} readOnly style={{background:'#F8F9FA'}}/></div>
+<div className="form-field" style={{marginTop:'15px'}}><label className="form-label">Description</label><input className="input" value={data.desc} onChange={e=>setData({...data,desc:e.target.value})}/></div>
+<div className="form-field" style={{marginTop:'15px'}}><label className="form-label">Quantity</label><input className="input" value={data.quantity} onChange={e=>setData({...data,quantity:e.target.value})}/></div>
+<div className="form-field" style={{marginTop:'15px'}}><label className="form-label">Location</label><input className="input" value={data.location} onChange={e=>setData({...data,location:e.target.value})}/></div>
+<div className="form-field" style={{marginTop:'15px'}}><label className="form-label">Cost (₹)</label><input className="input" type="number" value={data.cost} onChange={e=>setData({...data,cost:parseFloat(e.target.value)})}/></div>
+<div className="form-field" style={{marginTop:'15px'}}><label className="form-label">Status</label><select className="input" value={data.status} onChange={e=>setData({...data,status:e.target.value})}><option value="Active">Active</option><option value="Under Maintenance">Under Maintenance</option><option value="Issued">Issued</option></select></div>
+<button type="submit" className="btn btn-success" style={{width:'100%',marginTop:'24px',padding:'16px'}}>💾 SAVE CHANGES</button>
+</form>
+</div>
+</div>
+</div>
+);
+}
+
+// QR CODE MODAL
+function QRModal({item,onClose}){
+const qrRef=useRef(null);
+
+useEffect(()=>{
+  if(qrRef.current){
+    qrRef.current.innerHTML='';
+    const payload=JSON.stringify({id:item.id,desc:item.desc,location:item.location});
+    new QRCode(qrRef.current,{
+      text:payload,
+      width:200,
+      height:200,
+      colorDark:'#FF6B6B',
+      colorLight:'#FFFFFF'
+    });
+  }
+},[item]);
+
+const handlePrint=()=>{
+  const printContent=document.querySelector('.qr-display').cloneNode(true);
+  const printWindow=window.open('','','width=600,height=700');
+  printWindow.document.write(`
+    <html><head><title>QR Code - ${item.id}</title>
+    <style>body{font-family:Arial;text-align:center;padding:40px}.qr-display{display:inline-block;padding:30px;border:5px solid #FF6B6B;border-radius:20px}</style>
+    </head><body>${printContent.outerHTML}</body></html>
+  `);
+  printWindow.document.close();
+  printWindow.print();
+};
+
+return(
+<div className="modal" onClick={onClose}>
+<div className="modal-content" onClick={e=>e.stopPropagation()}>
+<div className="modal-header">
+<div className="modal-title">📱 QR Code Sticker</div>
+<button className="modal-close" onClick={onClose}>×</button>
+</div>
+<div className="modal-body" style={{textAlign:'center'}}>
+<div className="qr-display">
+<div style={{fontSize:'32px',marginBottom:'15px'}}>🇮🇳</div>
+<div style={{fontWeight:900,fontSize:'16px',marginBottom:'8px',fontFamily:'Fredoka'}}>SOUTHERN RIVERS DIVISION</div>
+<div style={{fontSize:'13px',color:'#636E72',marginBottom:'20px',fontWeight:600}}>CWC · Coimbatore</div>
+<div ref={qrRef} style={{margin:'0 auto',padding:'15px',background:'#F8F9FA',borderRadius:'10px'}}></div>
+<div style={{background:'linear-gradient(135deg,var(--coral),var(--pink))',color:'white',padding:'10px',borderRadius:'10px',fontWeight:900,fontSize:'14px',marginTop:'15px',fontFamily:'Fredoka'}}>{item.id}</div>
+<div style={{fontSize:'14px',fontWeight:700,marginTop:'12px',lineHeight:1.4}}>{item.desc.substring(0,60)}</div>
+</div>
+<div style={{marginTop:'28px',display:'flex',gap:'12px',justifyContent:'center'}}>
+<button className="btn btn-success" onClick={handlePrint}>🖨️ PRINT</button>
+<button className="btn btn-secondary" onClick={()=>{
+  html2canvas(document.querySelector('.qr-display')).then(canvas=>{
+    const link=document.createElement('a');
+    link.download=`QR_${item.id}.png`;
+    link.href=canvas.toDataURL();
+    link.click();
+  });
+}}>💾 DOWNLOAD</button>
+</div>
+</div>
+</div>
+</div>
+);
+}
+
+// USER MANAGEMENT (EE LEVEL)
+function Users({users,save,showToast}){
+const[editUser,setEditUser]=useState(null);
+const[saving,setSaving]=useState(false);
+
+const handleSave=async u=>{
+  setSaving(true);
+  const newUsers=users.map(x=>x.id===u.id?u:x);
+  await save(newUsers);
+  setEditUser(null);
+  setSaving(false);
+};
+
+return(
+<div>
+<h2 style={{fontSize:'32px',fontWeight:900,marginBottom:'28px',fontFamily:'Fredoka'}}>👥 User Management</h2>
+<p style={{marginBottom:'24px',color:'#636E72',fontSize:'16px'}}>Manage usernames, passwords, and roles for all users.</p>
+
+{users.map(u=>(
+<div key={u.id} className="card" style={{display:'flex',justifyContent:'space-between',alignItems:'center',flexWrap:'wrap',gap:'20px'}}>
+<div>
+<div style={{fontSize:'24px',fontWeight:900,fontFamily:'Fredoka',marginBottom:'6px'}}>{u.name}</div>
+<div style={{color:'#636E72',fontSize:'15px',fontWeight:600}}>
+<span style={{background:'#FFF9F0',padding:'4px 12px',borderRadius:'8px',marginRight:'10px'}}>👤 {u.username}</span>
+<span style={{background:'#FFF9F0',padding:'4px 12px',borderRadius:'8px'}}>{u.role}</span>
+</div>
+</div>
+<button className="btn btn-warning" onClick={()=>setEditUser(u)}>✏️ Edit User</button>
+</div>
+))}
+
+{editUser&&(
+<div className="modal" onClick={()=>!saving&&setEditUser(null)}>
+<div className="modal-content" onClick={e=>e.stopPropagation()}>
+<div className="modal-header">
+<div className="modal-title">✏️ Edit User: {editUser.name}</div>
+<button className="modal-close" onClick={()=>!saving&&setEditUser(null)} disabled={saving}>×</button>
+</div>
+<div className="modal-body">
+<div className="form-field">
+<label className="form-label">Name</label>
+<input className="input" value={editUser.name} onChange={e=>setEditUser({...editUser,name:e.target.value})} disabled={saving}/>
+</div>
+<div className="form-field" style={{marginTop:'15px'}}>
+<label className="form-label">Username</label>
+<input className="input" value={editUser.username} onChange={e=>setEditUser({...editUser,username:e.target.value})} disabled={saving}/>
+</div>
+<div className="form-field" style={{marginTop:'15px'}}>
+<label className="form-label">Password</label>
+<input className="input" type="password" value={editUser.password} onChange={e=>setEditUser({...editUser,password:e.target.value})} disabled={saving}/>
+</div>
+<div className="form-field" style={{marginTop:'15px'}}>
+<label className="form-label">Role</label>
+<input className="input" value={editUser.role} onChange={e=>setEditUser({...editUser,role:e.target.value})} disabled={saving}/>
+</div>
+<button className="btn btn-success" onClick={()=>handleSave(editUser)} disabled={saving} style={{width:'100%',marginTop:'24px',padding:'16px'}}>
+{saving?'⏳ Saving...':'💾 SAVE CHANGES'}
+</button>
+</div>
+</div>
+</div>
+)}
+</div>
+);
+}
+
+ReactDOM.render(<App/>,document.getElementById('root'));
+</script>
+
+<script>
+console.log('%c📦 SRD INVENTORY PORTAL','font-size:28px;font-weight:bold;color:#FF6B6B;text-shadow:2px 2px 4px rgba(0,0,0,0.2)');
+console.log('%c✅ COMPLETE VERSION v2.0','font-size:18px;font-weight:bold;color:#00D2A0');
+console.log('%c━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━','color:#4ECDC4');
+console.log('%c🔑 DEFAULT CREDENTIALS:','font-size:14px;font-weight:bold;color:#6C5CE7');
+console.log('   JE: je/je123 (Full Access)');
+console.log('   AD-II: ad/ad123 (View Only)');
+console.log('   EE: ee/ee123 (View + User Management)');
+console.log('%c━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━','color:#4ECDC4');
+console.log('%c✨ FEATURES:','font-size:14px;font-weight:bold;color:#FFA562');
+console.log('   ✅ Cover Page with CWC Logo');
+console.log('   ✅ 136 Lab Items Support');
+console.log('   ✅ QR Code Generation');
+console.log('   ✅ Export: CSV, Excel, PDF');
+console.log('   ✅ User Management (EE Level)');
+console.log('   ✅ Firebase Integration');
+console.log('   ✅ Fully Responsive');
+console.log('%c━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━','color:#4ECDC4');
+console.log('%c📂 TO LOAD 136 ITEMS:','font-size:14px;font-weight:bold;color:#B084CC');
+console.log('   1. Place lab_items_js.json in same folder');
+console.log('   2. Click "Load All 136 Items" on Dashboard');
+console.log('   3. Or use browser console to import');
+console.log('%c━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━','color:#4ECDC4');
+console.log('%c🚀 Ready for Production!','font-size:16px;font-weight:bold;color:#00D2A0');
+</script>
+</body>
+</html>
