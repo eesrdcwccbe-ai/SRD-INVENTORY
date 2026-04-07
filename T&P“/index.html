@@ -441,7 +441,7 @@ return(
 <h3 style={{fontSize:'22px',fontWeight:900,marginBottom:'20px',fontFamily:'Fredoka'}}>📥 Load All 136 Lab Items</h3>
 <p style={{marginBottom:'20px',color:'#636E72'}}>Click below to load all equipment from your Excel files into the portal.</p>
 <button className="btn btn-success" onClick={()=>{
-  fetch('lab_items_js.json')
+ fetch('/lab_items_js.json')
     .then(r=>r.json())
     .then(data=>{
       localStorage.setItem('tp_srd',JSON.stringify(data));
