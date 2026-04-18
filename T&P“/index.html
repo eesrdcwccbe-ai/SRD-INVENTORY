@@ -2890,7 +2890,7 @@ const INITIAL_LAB_ITEMS=[
     "createdBy": "System",
     "issuances": []
   },
-  {
+{
     "id": "SRD/LAB/2024/136",
     "type": "Equipment",
     "desc": "vacume filtration Assembly (Borosil)",
@@ -2905,13 +2905,12 @@ const INITIAL_LAB_ITEMS=[
     "model": "Lab Grade",
     "condition": "Good",
     "status": "Active",
-    "remarks": "\u2713",
+    "remarks": "✓",
     "created": "2024-01-15T00:00:00Z",
     "createdBy": "System",
     "issuances": []
   }
-]),createdBy:'System',issuances:[]}
-];
+]; 
 
 // MAIN APP
 function App(){
@@ -2997,17 +2996,13 @@ const saveData=async(type,data)=>{
   try{
     if(useFirebase&&database){
       const ref=database.ref(type==='tp'?'tp_items':'mas_items');
-      await ref.remove();
-      data.forEach(item=>ref.child(item.id.replace(/\//g,'_')).set(item));
+      const dataObj = {};
+      data.forEach(item => {
+        dataObj[item.id.replace(/\//g,'_')] = item;
+      });
+      await ref.set(dataObj); // Atomic update is safer than remove() + loop
       setSynced(true);
     }
-    localStorage.setItem(type==='tp'?TP_KEY:MAS_KEY,JSON.stringify(data));
-    if(type==='tp')setTpData(data);
-    else setMasData(data);
-  }catch(e){
-    console.error('Save error',e);
-    showToast('Error saving','error');
-  }
 };
 
 const saveUsers=async(updatedUsers)=>{
@@ -3482,9 +3477,11 @@ return(
 {saving?'⏳ Saving...':'💾 SAVE CHANGES'}
 </button>
 </div>
+</div>
 )}
-ReactDOM.render(<App/>,document.getElementById('root'));
-</script>
+</div> // Added closing div for the component
+);
+} // Added closing brace for the Users function
 
 <script>
 console.log('%c📦 SRD INVENTORY PORTAL','font-size:28px;font-weight:bold;color:#FF6B6B;text-shadow:2px 2px 4px rgba(0,0,0,0.2)');
