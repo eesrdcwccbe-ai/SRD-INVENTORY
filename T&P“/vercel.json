@@ -2,11 +2,22 @@
   "version": 2,
   "builds": [
     {
-      "src": "index.html",
+      "src": "*.html",
+      "use": "@vercel/static"
+    },
+    {
+      "src": "*.json",
       "use": "@vercel/static"
     }
   ],
   "routes": [
+    {
+      "src": "/lab_items_js.json",
+      "dest": "/lab_items_js.json",
+      "headers": {
+        "Content-Type": "application/json"
+      }
+    },
     {
       "src": "/(.*)",
       "dest": "/index.html"
