@@ -3000,9 +3000,20 @@ const saveData=async(type,data)=>{
       data.forEach(item => {
         dataObj[item.id.replace(/\//g,'_')] = item;
       });
-      await ref.set(dataObj); // Atomic update is safer than remove() + loop
+      await ref.set(dataObj);
       setSynced(true);
     }
+    if(type==='tp'){
+      localStorage.setItem(TP_KEY,JSON.stringify(data));
+      setTpData(data);
+    }else{
+      localStorage.setItem(MAS_KEY,JSON.stringify(data));
+      setMasData(data);
+    }
+  }catch(e){
+    console.error('Save error',e);
+    showToast('Sync Error','error');
+  }
 };
 
 const saveUsers=async(updatedUsers)=>{
@@ -3152,10 +3163,8 @@ return(
 <div className="stat-card"><div className="stat-value">{masData.length}</div><div className="stat-label">MAS Items</div></div>
 </div>
 </div>
-</div>
 );
 }
-
 // PORTAL SECTION
 function Portal({type,data,save,user,showToast,tab,setTab}){
 const[editItem,setEditItem]=useState(null);
@@ -3507,6 +3516,8 @@ console.log('   2. Click "Load All 136 Items" on Dashboard');
 console.log('   3. Or use browser console to import');
 console.log('%c━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━','color:#4ECDC4');
 console.log('%c🚀 Ready for Production!','font-size:16px;font-weight:bold;color:#00D2A0');
+const root = ReactDOM.createRoot(document.getElementById('root'));
+root.render(<App />);
 </script>
 </body>
 </html>
